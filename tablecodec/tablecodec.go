@@ -16,6 +16,7 @@ package tablecodec
 import (
 	"bytes"
 	"encoding/binary"
+	"log"
 	"math"
 	"time"
 
@@ -72,7 +73,28 @@ func EncodeRowKeyWithHandle(tableID int64, handle int64) kv.Key {
 // DecodeRecordKey decodes the key and gets the tableID, handle.
 func DecodeRecordKey(key kv.Key) (tableID int64, handle int64, err error) {
 	/* Your code here */
+	if len(key) != RecordRowKeyLen || !hasTablePrefix(key) || !hasRecordPrefixSep(key[prefixLen-2:]) {
+		return 0, 0, errInvalidKey.GenWithStack("invalid key - %q", key)
+	}
+	// rowkey t{table_id}_handle
+	_, tableID, err = codec.DecodeInt(key[tablePrefixLength:TableSplitKeyLen])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	_, handle, err = codec.DecodeInt(key[prefixLen:])
+	if err != nil {
+		return 0, 0, err
+	}
+	log.Println(tableID, handle == int64(math.MaxUint32))
 	return
+}
+
+// DecodeIndexKeyPrefix decodes the key and gets the tableID, indexID, indexValues.
+func DecodeIndexKeyPrefix(key kv.Key) (tableID int64, indexID int64, indexValues []byte, err error) {
+	/* Your code here */
+	log.Println(key.String())
+	return tableID, indexID, indexValues, nil
 }
 
 // appendTableIndexPrefix appends table index prefix  "t[tableID]_i".
@@ -90,12 +112,6 @@ func EncodeIndexSeekKey(tableID int64, idxID int64, encodedValue []byte) kv.Key 
 	key = codec.EncodeInt(key, idxID)
 	key = append(key, encodedValue...)
 	return key
-}
-
-// DecodeIndexKeyPrefix decodes the key and gets the tableID, indexID, indexValues.
-func DecodeIndexKeyPrefix(key kv.Key) (tableID int64, indexID int64, indexValues []byte, err error) {
-	/* Your code here */
-	return tableID, indexID, indexValues, nil
 }
 
 // DecodeIndexKey decodes the key and gets the tableID, indexID, indexValues.
