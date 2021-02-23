@@ -16,7 +16,6 @@ package tablecodec
 import (
 	"bytes"
 	"encoding/binary"
-	"log"
 	"math"
 	"time"
 
@@ -76,7 +75,6 @@ func DecodeRecordKey(key kv.Key) (tableID int64, handle int64, err error) {
 	if len(key) != RecordRowKeyLen || !hasTablePrefix(key) || !hasRecordPrefixSep(key[prefixLen-2:]) {
 		return 0, 0, errInvalidKey.GenWithStack("invalid key - %q", key)
 	}
-	// rowkey t{table_id}_handle
 	_, tableID, err = codec.DecodeInt(key[tablePrefixLength:TableSplitKeyLen])
 	if err != nil {
 		return 0, 0, err
@@ -86,14 +84,27 @@ func DecodeRecordKey(key kv.Key) (tableID int64, handle int64, err error) {
 	if err != nil {
 		return 0, 0, err
 	}
-	log.Println(tableID, handle == int64(math.MaxUint32))
 	return
 }
 
 // DecodeIndexKeyPrefix decodes the key and gets the tableID, indexID, indexValues.
 func DecodeIndexKeyPrefix(key kv.Key) (tableID int64, indexID int64, indexValues []byte, err error) {
 	/* Your code here */
-	log.Println(key.String())
+	// tablePrefix_tableID_indexPrefixSep_indexID_ColumnsValue_rowID
+	// 1 8 2 8
+	if !hasTablePrefix(key) {
+		return 0, 0, nil, errInvalidKey.GenWithStack("invalid key - %q", key)
+	}
+	_, tableID, err = codec.DecodeInt(key[tablePrefixLength:TableSplitKeyLen])
+	if err != nil {
+		return 0, 0, nil, err
+	}
+	_, indexID, err = codec.DecodeInt(key[(TableSplitKeyLen + recordPrefixSepLength):(TableSplitKeyLen + recordPrefixSepLength + idLen)])
+	if err != nil {
+		return 0, 0, nil, err
+	}
+	// t{table_id}_indexPrefixSep_indexID
+	indexValues = key[prefixLen+idLen:]
 	return tableID, indexID, indexValues, nil
 }
 
