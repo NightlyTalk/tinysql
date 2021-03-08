@@ -3804,7 +3804,6 @@ IndexHintListOpt:
 	}
 
 JoinTable:
-	//  select * from t1 join t2 /*crossJoin*/ left join /*left join*/ t3 on t2.id = t3.id
 	/* Use %prec to evaluate production TableRef before cross join */
 	TableRef CrossOpt TableRef %prec tableRefPriority
 	{

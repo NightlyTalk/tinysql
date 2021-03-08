@@ -217,16 +217,33 @@ func onDropColumn(t *meta.Meta, job *model.Job) (ver int64, _ error) {
 	//       You'll need to find the right place where to put the function `adjustColumnInfoInDropColumn`.
 	//       Also you'll need to take a corner case about the default value.
 	//       (Think about how the not null property and default value will influence the `Drop Column` operation.
+	// https://zhuanlan.zhihu.com/p/43088324
 	switch colInfo.State {
 	case model.StatePublic:
 		// To be filled
+		colInfo.State = model.StateWriteOnly
+		adjustColumnInfoInDropColumn(tblInfo, colInfo.Offset)
 		ver, err = updateVersionAndTableInfoWithCheck(t, job, tblInfo, originalState != colInfo.State)
+		if err != nil {
+			return ver, errors.Trace(err)
+		}
+		job.SchemaState = model.StateWriteOnly
 	case model.StateWriteOnly:
 		// To be filled
+		colInfo.State = model.StateDeleteOnly
 		ver, err = updateVersionAndTableInfo(t, job, tblInfo, originalState != colInfo.State)
+		if err != nil {
+			return ver, errors.Trace(err)
+		}
+		job.SchemaState = model.StateDeleteOnly
 	case model.StateDeleteOnly:
 		// To be filled
+		colInfo.State = model.StateDeleteReorganization
 		ver, err = updateVersionAndTableInfo(t, job, tblInfo, originalState != colInfo.State)
+		if err != nil {
+			return ver, errors.Trace(err)
+		}
+		job.SchemaState = model.StateDeleteReorganization
 	case model.StateDeleteReorganization:
 		// reorganization -> absent
 		// All reorganization jobs are done, drop this column.

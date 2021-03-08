@@ -783,6 +783,7 @@ func (s *testColumnSuite) TestAddColumn(c *C) {
 	s.d.start(context.Background(), nil)
 }
 
+// /usr/bin/go test -v -timeout 30s -check.f testColumnSuite.TestDropColumn
 func (s *testColumnSuite) TestDropColumn(c *C) {
 	d := newDDL(
 		context.Background(),
